@@ -13,5 +13,6 @@ var addCmd = &cobra.Command{
 	Long:  `Add a new task to the list of tasks.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Fprintf(os.Stdout, "Add a new task %s\n", args[0])
+
 	},
 }
