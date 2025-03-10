@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"text/tabwriter"
 	"time"
+
+	"github.com/mergestat/timediff"
 )
 
 var csvPath string
@@ -86,7 +89,7 @@ func AddTask(description string) {
 	fmt.Println("Task added successfully")
 }
 
-func Complete(taskId int) error {
+func CompleteTask(taskId int) error {
 	// Ouvrir le fichier CSV
 	file, err := os.Open(csvPath)
 	if err != nil {
@@ -141,5 +144,59 @@ func Complete(taskId int) error {
 	}
 
 	fmt.Println("task completed successfully")
+	return nil
+}
+
+func ListTasks(allTask bool) error {
+	// Create a new tabwriter.Writer instance.
+	w := tabwriter.NewWriter(os.Stdout, 0, 0, 3, ' ', 0)
+	defer w.Flush()
+
+	// Open csv task file
+	file, err := os.Open(csvPath)
+	if err != nil {
+		return fmt.Errorf("failed to open CSV file: %w", err)
+	}
+	defer file.Close()
+
+	// Lire le fichier CSV
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = -1
+	data, err := reader.ReadAll()
+	if err != nil {
+		return fmt.Errorf("failed to read CSV file: %w", err)
+	}
+	// Remove the header row
+	if len(data) > 0 {
+		data = data[1:]
+	}
+
+	var tasks [][]string
+	for _, task := range data {
+		if allTask {
+			tasks = append(tasks, task)
+		} else if task[3] == "false" {
+			tasks = append(tasks, task)
+		}
+	}
+
+	// Write some data to the Writer.
+	if allTask {
+		fmt.Fprintln(w, "ID\tTask\tCreated\tDone")
+	} else {
+		fmt.Fprintln(w, "ID\tTask\tCreated")
+	}
+
+	for _, task := range tasks {
+		var timestamp, _ = strconv.Atoi(task[2])
+		var time = time.Unix(int64(timestamp), 0)
+		var timeStr = timediff.TimeDiff(time)
+		if allTask {
+			fmt.Fprintf(w, "%s\t%s\t%s\t%s\n", task[0], task[1], timeStr, task[3])
+		} else {
+			fmt.Fprintf(w, "%s\t%s\t%s\n", task[0], task[1], timeStr)
+		}
+	}
+
 	return nil
 }

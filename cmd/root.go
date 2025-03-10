@@ -17,10 +17,13 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringP("author", "a", "LE BRIS Loris", "author name for copyright attribution")
+	rootCmd.PersistentFlags().StringP("author", "u", "LE BRIS Loris", "author name for copyright attribution")
 
 	rootCmd.AddCommand(addCmd)
+
+	listCmd.Flags().BoolVarP(&allFlag, "all", "a", false, "List all tasks")
 	rootCmd.AddCommand(listCmd)
+
 	rootCmd.AddCommand(completeCmd)
 }
 

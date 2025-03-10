@@ -26,7 +26,7 @@ var completeCmd = &cobra.Command{
 			return
 		}
 
-		err = csvcontroller.Complete(taskID)
+		err = csvcontroller.CompleteTask(taskID)
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
