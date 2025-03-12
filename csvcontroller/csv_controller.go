@@ -14,6 +14,10 @@ import (
 var csvPath string
 
 func init() {
+	initCsv()
+}
+
+func initCsv() {
 	csvPath = "/home/" + os.Getenv("USER") + "/tasks.csv"
 
 	file, err := os.Open(csvPath)
@@ -36,15 +40,14 @@ func init() {
  * AddTask writes a new task to the CSV file
  * @param description string
  */
-func AddTask(description string) {
+func AddTask(description string) error {
 	if len(description) == 0 {
-		fmt.Fprintf(os.Stderr, "Task description is empty\n")
-		return
+		return fmt.Errorf("Task description is empty")
 	}
 
 	file, err := os.Open(csvPath)
 	if err != nil {
-		return
+		return fmt.Errorf("failed to open CSV file: %w", err)
 	}
 	defer file.Close()
 
@@ -53,7 +56,7 @@ func AddTask(description string) {
 	reader.FieldsPerRecord = -1
 	data, err := reader.ReadAll()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to read CSV file: %w", err)
 	}
 
 	// Get the last ID
@@ -61,7 +64,7 @@ func AddTask(description string) {
 	if len(data) > 1 {
 		newId, err = strconv.Atoi(data[len(data)-1][0])
 		if err != nil {
-			panic(err)
+			return err
 		}
 		newId++
 	}
@@ -73,7 +76,7 @@ func AddTask(description string) {
 	// Append the new task to the CSV file
 	file, err = os.OpenFile(csvPath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
 	if err != nil {
-		return
+		return fmt.Errorf("failed to open CSV file: %w", err)
 	}
 	defer file.Close()
 
@@ -83,21 +86,19 @@ func AddTask(description string) {
 	err = writer.Write(newTask)
 
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to write CSV file: %w", err)
 	}
 
-	fmt.Println("Task added successfully")
+	return nil
 }
 
 func CompleteTask(taskId int) error {
-	// Ouvrir le fichier CSV
 	file, err := os.Open(csvPath)
 	if err != nil {
 		return fmt.Errorf("failed to open CSV file: %w", err)
 	}
 	defer file.Close()
 
-	// Lire le fichier CSV
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = -1
 	data, err := reader.ReadAll()
@@ -197,6 +198,61 @@ func ListTasks(allTask bool) error {
 			fmt.Fprintf(w, "%s\t%s\t%s\n", task[0], task[1], timeStr)
 		}
 	}
+
+	return nil
+}
+
+func DeleteTask(taskId int) error {
+	file, err := os.Open(csvPath)
+	if err != nil {
+		return fmt.Errorf("failed to open CSV file: %w", err)
+	}
+	defer file.Close()
+
+	reader := csv.NewReader(file)
+	reader.FieldsPerRecord = -1
+	data, err := reader.ReadAll()
+	if err != nil {
+		return fmt.Errorf("failed to read CSV file: %w", err)
+	}
+
+	var taskFound = false
+	for index, row := range data {
+		if id, err := strconv.Atoi(row[0]); err == nil && id == taskId {
+			data = append(data[:index], data[index+1:]...)
+			taskFound = true
+			break
+		}
+	}
+
+	if !taskFound {
+		return fmt.Errorf("task #%d not found", taskId)
+	}
+
+	file, err = os.Create(csvPath)
+	if err != nil {
+		return fmt.Errorf("failed to create CSV file: %w", err)
+	}
+	defer file.Close()
+
+	writer := csv.NewWriter(file)
+	defer writer.Flush()
+
+	if err := writer.WriteAll(data); err != nil {
+		return fmt.Errorf("failed to write to CSV file: %w", err)
+	}
+
+	fmt.Println("task deleted successfully")
+	return nil
+}
+
+func DeleteAll() error {
+	err := os.Remove(csvPath)
+	if err != nil {
+		return fmt.Errorf("failed to remove CSV file %w", err)
+	}
+
+	initCsv()
 
 	return nil
 }
