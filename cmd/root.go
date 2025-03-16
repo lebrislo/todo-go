@@ -11,9 +11,6 @@ var rootCmd = &cobra.Command{
 	Use:   "todo-go",
 	Short: "TODO-GO is a lightweight task manager",
 	Long:  `TODO-GO is a lightweight task manager built with Go and Cobra.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Fprintf(os.Stdout, "TODO-GO !\n")
-	},
 }
 
 func init() {

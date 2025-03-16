@@ -1,10 +1,11 @@
-package csvcontroller
+package controller
 
 import (
 	"encoding/csv"
 	"fmt"
 	"os"
 	"strconv"
+	"syscall"
 	"text/tabwriter"
 	"time"
 
@@ -36,20 +37,40 @@ func initCsv() {
 	writer.Write(headers)
 }
 
+func loadFile(filepath string) (*os.File, error) {
+	f, err := os.OpenFile(filepath, os.O_RDWR|os.O_CREATE, os.ModePerm)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file for reading")
+	}
+
+	// Exclusive lock obtained on the file descriptor
+	if err := syscall.Flock(int(f.Fd()), syscall.LOCK_EX); err != nil {
+		_ = f.Close()
+		return nil, err
+	}
+
+	return f, nil
+}
+
+func closeFile(f *os.File) error {
+	syscall.Flock(int(f.Fd()), syscall.LOCK_UN)
+	return f.Close()
+}
+
 /**
  * AddTask writes a new task to the CSV file
  * @param description string
  */
 func AddTask(description string) error {
 	if len(description) == 0 {
-		return fmt.Errorf("Task description is empty")
+		return fmt.Errorf("task description is empty")
 	}
 
-	file, err := os.Open(csvPath)
+	file, err := loadFile(csvPath)
 	if err != nil {
-		return fmt.Errorf("failed to open CSV file: %w", err)
+		return err
 	}
-	defer file.Close()
+	defer closeFile(file)
 
 	// Read CSV file
 	reader := csv.NewReader(file)
@@ -73,13 +94,6 @@ func AddTask(description string) error {
 	timestamp := strconv.FormatInt(time.Now().UTC().Unix(), 10)
 	newTask := []string{fmt.Sprintf("%d", newId), description, timestamp, "false"}
 
-	// Append the new task to the CSV file
-	file, err = os.OpenFile(csvPath, os.O_APPEND|os.O_WRONLY, os.ModeAppend)
-	if err != nil {
-		return fmt.Errorf("failed to open CSV file: %w", err)
-	}
-	defer file.Close()
-
 	writer := csv.NewWriter(file)
 	defer writer.Flush()
 
@@ -89,15 +103,17 @@ func AddTask(description string) error {
 		return fmt.Errorf("failed to write CSV file: %w", err)
 	}
 
+	fmt.Println("task created successfully")
+
 	return nil
 }
 
 func CompleteTask(taskId int) error {
-	file, err := os.Open(csvPath)
+	file, err := loadFile(csvPath)
 	if err != nil {
-		return fmt.Errorf("failed to open CSV file: %w", err)
+		return err
 	}
-	defer file.Close()
+	defer closeFile(file)
 
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = -1
@@ -154,11 +170,11 @@ func ListTasks(allTask bool) error {
 	defer w.Flush()
 
 	// Open csv task file
-	file, err := os.Open(csvPath)
+	file, err := loadFile(csvPath)
 	if err != nil {
-		return fmt.Errorf("failed to open CSV file: %w", err)
+		return err
 	}
-	defer file.Close()
+	defer closeFile(file)
 
 	// Lire le fichier CSV
 	reader := csv.NewReader(file)
@@ -203,11 +219,11 @@ func ListTasks(allTask bool) error {
 }
 
 func DeleteTask(taskId int) error {
-	file, err := os.Open(csvPath)
+	file, err := loadFile(csvPath)
 	if err != nil {
-		return fmt.Errorf("failed to open CSV file: %w", err)
+		return err
 	}
-	defer file.Close()
+	defer closeFile(file)
 
 	reader := csv.NewReader(file)
 	reader.FieldsPerRecord = -1

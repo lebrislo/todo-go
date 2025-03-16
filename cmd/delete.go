@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"todo-go/csvcontroller"
+	"todo-go/controller"
 
 	"github.com/spf13/cobra"
 )
@@ -17,7 +17,7 @@ var deleteCmd = &cobra.Command{
 	Long:  `Delete a specific task by providing its ID or delete all tasks using the --all flag.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		if deleteAllFlag {
-			err := csvcontroller.DeleteAll()
+			err := controller.DeleteAll()
 
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)
@@ -30,7 +30,7 @@ var deleteCmd = &cobra.Command{
 				return
 			}
 
-			err = csvcontroller.DeleteTask(taskID)
+			err = controller.DeleteTask(taskID)
 
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err)

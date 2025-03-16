@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"todo-go/csvcontroller"
+	"todo-go/controller"
 
 	"github.com/spf13/cobra"
 )
@@ -26,7 +26,7 @@ var completeCmd = &cobra.Command{
 			return
 		}
 
-		err = csvcontroller.CompleteTask(taskID)
+		err = controller.CompleteTask(taskID)
 
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)

@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"todo-go/csvcontroller"
+	"todo-go/controller"
 
 	"github.com/spf13/cobra"
 )
@@ -18,7 +18,7 @@ var addCmd = &cobra.Command{
 			return
 		}
 
-		err := csvcontroller.AddTask(args[0])
+		err := controller.AddTask(args[0])
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		}
